@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aviation Disruption Prediction | Research Report</title><style>
+:root{font-family:Inter,system-ui,sans-serif;color:#172334;background:#f4f7f9;--navy:#10263b;--teal:#087f77;--muted:#607487;--line:#d9e3e8;--warning:#be7a09;--success:#087f77}*{box-sizing:border-box}body{margin:0;line-height:1.55}header{background:var(--navy);color:white;padding:52px max(24px,calc((100% - 1200px)/2)) 44px}header p{max-width:850px;color:#c6d7e2}.tag{color:#72dfcd;text-transform:uppercase;font-size:.78rem;font-weight:700;letter-spacing:.12em}h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.08;margin:.35rem 0}main{max-width:1200px;margin:auto;padding:30px 24px 64px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}.card,section{background:white;border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px}.metric{font-size:1.8rem;font-weight:750;color:var(--teal)}h2{margin-top:0;color:var(--navy)}select{font:inherit;padding:9px;border:1px solid var(--line);border-radius:8px;background:white}.result{margin-top:14px;padding:16px;background:#eef8f6;border-left:4px solid var(--teal);border-radius:6px}.pending{background:#fff7e7;border-left-color:#be7a09}code{background:#eef2f4;padding:2px 5px;border-radius:4px}footer{color:var(--muted);font-size:.9rem}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line)}@media(max-width:600px){main{padding:18px}header{padding:34px 22px}}
+.important{background:#fff7e7;border-left:4px solid var(--warning);padding:16px;border-radius:6px;margin:16px 0}.success{background:#eef8f6;border-left:4px solid var(--success);padding:16px;border-radius:6px;margin:16px 0}.model-table{font-size:.9rem}.horizon-selector{margin:16px 0}.tab{display:inline-block;padding:8px 16px;margin-right:8px;background:#eef2f4;border-radius:6px;cursor:pointer}.tab.active{background:var(--teal);color:white}.content{display:none}.content.active{display:block}.ap-value{font-weight:700;color:var(--teal)}.notice{background:#e8f4f8;border-left:4px solid #2196f3;padding:16px;border-radius:6px;margin:16px 0}.model-status{font-size:.85rem;color:var(--muted);margin-top:8px}
+</style></head><body><header><div class="tag">IIT Gandhinagar · ES 335 · Joint Research</div><h1>Aviation Disruption Prediction</h1><p>Retrospective exploratory research comparing Flight/Weather, Airport/Network, and M3 logistic stacking for BTS departure delay prediction. All results are retrospective and exploratory; no deployment readiness is claimed.</p></header><main>
+<div class="grid"><div class="card"><div class="tag">Target</div><div class="metric">DepDel15</div><p>Binary BTS outcome: departure delay ≥15 minutes among non-cancelled flights.</p></div><div class="card"><div class="tag">Identity</div><div class="metric">bts-flight-v1</div><p>Versioned SHA-256 identity over nine normalized BTS schedule fields.</p></div><div class="card"><div class="tag">Evaluation</div><div class="metric">Retrospective</div><p>Chronological splits with explicitly labeled exploratory evaluation periods.</p></div></div>
+<div class="important"><strong>Important:</strong> All results in this report are retrospective and exploratory. Final BTS outcomes define eligibility cohorts retrospectively, not live availability. No blind final test exists; 2025 was previously inspected.</div>
+<div class="notice"><strong>Website Purpose:</strong> This research website displays stored evaluation results from saved model artifacts. It does not generate live predictions. For live prediction capabilities, see the local flight/weather dashboard documentation.</div>
+<section><h2>Research Question and Scope</h2><p>How do Flight/Weather and Airport/Network scores compare in ranking and classifying BTS departure delays at T−2h and T−30m on common 2024 flights, and how does a logistic stack of their continuous probabilities compare in the November–December exploratory evaluation?</p><p>This is a matched comparison of different pipelines, <strong>not a controlled feature ablation</strong>. Estimator families, training populations, feature engineering, and threshold selection periods differ across models.</p></section>
+<section><h2>Data, Identity, and Eligibility</h2><p>The cleaned 2024 source contains 6,982,766 data rows. Canonical identity resolves 6,982,525 rows uniquely; 220 rows are ambiguous, 1 is identity-incomplete, and 20 are unmatched. These exceptions were preserved rather than assigned inferred IDs.</p><p>Retrospective eligibility rules use final BTS outcomes: T−2h requires <code>CANCELLED == 0</code> and <code>DEP_DELAY > -120</code> minutes; T−30m requires <code>CANCELLED == 0</code> and <code>DEP_DELAY > -30</code> minutes.</p><p>39 ambiguous October–December rows were scored but excluded from canonical matched comparison due to no defensible canonical ID.</p></section>
+<section><h2>Model Methodology and Live Inference Status</h2>
+<div class="horizon-selector">
+<span class="tab active" onclick="showModel('flight', event)">Flight/Weather</span>
+<span class="tab" onclick="showModel('airport', event)">Airport/Network</span>
+<span class="tab" onclick="showModel('m3', event)">M3 Stack</span>
+</div>
+<div id="flight" class="content active">
+<h3>Flight/Weather Models</h3>
+<p><strong>Training:</strong> SGDClassifier trained on 2022–2023. Platt LogisticRegression calibrator and F1 threshold selected on January–June 2024. September scores used saved classifier and calibrator without refitting.</p>
+<p><strong>Features:</strong> Schedule fields, historical delay rates (prior 3 months, 7/30 days), and GHCNh FM15 METAR observations with 15-minute availability proxy and 180-minute staleness limit.</p>
+<p><strong>Live Inference Status:</strong> Historical evaluation complete. Local inference prototype exists via <code>src/flight_weather_web.py</code> and <code>src/predict_current_flights.py</code> for prediction-time schedule data with prior BTS history and available decoded METARs.</p>
+<p><strong>Limitations:</strong> Complete estimator hyperparameter, feature-selection, and model-family selection history not recovered. Weather uses observation-time proxy, not actual receipt timestamps. Schedule-vintage and BTS publication timestamps unavailable.</p>
+</div>
+<div id="airport" class="content">
+<h3>Airport/Network Models</h3>
+<p><strong>Training:</strong> RandomForestClassifier (50 trees, max depth 12, min leaf size 10, class_weight="balanced_subsample", random state 42). Stratified sample up to 200,000 eligible January–August 2024 flights per horizon. September used to choose operating threshold by maximizing F1.</p>
+<p><strong>Features:</strong> Airport network state, recent activity reconstructed from final BTS outcomes, schedule information.</p>
+<p><strong>Live Inference Status:</strong> Historical evaluation complete. Live inference is not validated; original scoring-time feature builder not recovered.</p>
+<p><strong>Limitations:</strong> Original scoring-time feature builder not recovered. Recorded builder SHA-256 <code>a77c70db...</code> identifies unrecovered source; commonly cited <code>c107a5eb...</code> is the scoring runner, not the builder. Complete model selection history not recovered.</p>
+</div>
+<div id="m3" class="content">
+<h3>M3 Logistic Stack</h3>
+<p><strong>Architecture:</strong> Logistic Regression (C=1, solver="lbfgs", max_iter=1000) on two logit-transformed, standardized continuous component probabilities.</p>
+<p><strong>Protocol:</strong> September 2024 meta-training, October 2024 threshold selection (maximize F1), November–December 2024 evaluation. StandardScaler fit on September rows only. Probabilities clipped to [1e-6, 1−1e-6] before logit transformation.</p>
+<p><strong>Live Inference Status:</strong> Retrospective stacking evaluation complete. Live inference is not validated; requires both Flight/Weather and Airport/Network component scores for new predictions.</p>
+<p><strong>Limitations:</strong> Exact row-level September training-ID list not saved. M3 model files serialized after evaluation predictions calculated; pre-evaluation serialized-model hash not established.</p>
+</div>
+</section>
+<section><h2>Interactive Evidence Viewer</h2>
+<p>Select evaluation period and horizon to view stored metrics for all models.</p>
+<div class="horizon-selector">
+<label for="period">Select evaluation period:</label>
+<select id="period" onchange="renderResults()">
+<option value="octdec">October–December 2024 (Components)</option>
+<option value="novdec">November–December 2024 (M3 Evaluation)</option>
+</select>
+<label for="horizon" style="margin-left:16px;">Select horizon:</label>
+<select id="horizon" onchange="renderResults()">
+<option value="t2">T−2h</option>
+<option value="t30">T−30m</option>
+</select>
+</div>
+<div id="results" class="result"></div>
+</section>
+<section><h2>Threats to Validity and Limitations</h2>
+<ul>
+<li><strong>Provenance:</strong> Airport/Network original scoring-time builder not recovered. M3 row-level September training-ID list not saved. Complete model selection histories for all three models not recovered.</li>
+<li><strong>Feature availability:</strong> Schedule-vintage timestamps, BTS publication/ingestion times, and recent airport-state availability timestamps unavailable. Flight/Weather uses 15-minute weather observation-time proxy, not actual receipt timestamps.</li>
+<li><strong>Evaluation status:</strong> October–December 2024 and 2025 have been inspected; neither is a blind final test. 2025 cannot serve as an untouched holdout.</li>
+<li><strong>Threshold differences:</strong> Component thresholds selected in different periods (Flight/Weather Jan–Jun, Airport/Network Sep); M3 threshold selected October. Procedures not identical.</li>
+<li><strong>Matched comparison only:</strong> Different pipelines compared on matched IDs; differences cannot be attributed exclusively to feature additions.</li>
+<li><strong>Live inference:</strong> Flight/Weather has a local inference prototype; Airport/Network and M3 live inference are not validated. This website displays stored results only.</li>
+<li><strong>No deployment claims:</strong> Results do not establish real-time feature availability, operational readiness, causal effects, or deployment validity.</li>
+</ul>
+</section>
+<section><h2>Conclusion</h2>
+<p>The saved retrospective results show that the M3 logistic stack ranked delayed flights better by average precision and captured more delayed flights by recall than either component on the November–December 2024 matched sample. Precision was lower, and threshold-dependent results varied by horizon. These findings are exploratory, not a blind final-test result. Builder provenance, feature availability, selection history, and a genuinely untouched test period remain unresolved. No live-readiness or passenger-service claim is made.</p>
+</section>
+<section><h2>Reproduce Locally</h2><p>See <code>docs/LOCAL_EXECUTION_GUIDE.md</code> and <code>docs/SAFE_LOCAL_HANDOFF.md</code>. For live prediction capabilities, see <code>docs/flight_weather_website.md</code>. Raw/flagged CSVs remain local and are not part of the site.</p></section><footer>Static research report displaying stored evaluation results. Last updated: 2026-11-05.</footer></main><script>
+const octdecData={
+t2:{fw:{model:'Flight/Weather',ap:'0.301968',roc:'0.674348',prec:'0.268672',rec:'0.536774',f1:'0.358103',bal:'0.623741',n:'1,768,340',thr:'0.217442 (Jan–Jun)'},an:{model:'Airport/Network',ap:'0.296262',roc:'0.664327',prec:'0.244777',rec:'0.588000',f1:'0.345660',bal:'0.614400',n:'1,768,340',thr:'0.470405 (Sep)'}},
+t30:{fw:{model:'Flight/Weather',ap:'0.301948',roc:'0.674965',prec:'0.271437',rec:'0.523707',f1:'0.357554',bal:'0.622683',n:'1,768,222',thr:'0.218222 (Jan–Jun)'},an:{model:'Airport/Network',ap:'0.313754',roc:'0.673690',prec:'0.256832',rec:'0.570994',f1:'0.354301',bal:'0.621918',n:'1,768,222',thr:'0.463141 (Sep)'}}
+};
+const novdecData={
+t2:{fw:{model:'Flight/Weather',ap:'0.327948',roc:'0.676451',prec:'0.273891',rec:'0.617136',f1:'0.379400',bal:'0.628216',brier:'0.139181',n:'1,159,155',thr:'0.217442 (Jan–Jun)'},an:{model:'Airport/Network',ap:'0.322279',roc:'0.668014',prec:'0.262302',rec:'0.615436',f1:'0.367832',bal:'0.616919',brier:'0.213314',n:'1,159,155',thr:'0.470405 (Sep)'},m3:{model:'M3 Stack',ap:'0.344739',roc:'0.684306',prec:'0.259718',rec:'0.689488',f1:'0.377310',bal:'0.628104',brier:'0.137256',n:'1,159,155',thr:'0.178095 (Oct)'}},
+t30:{fw:{model:'Flight/Weather',ap:'0.327614',roc:'0.677258',prec:'0.275969',rec:'0.608435',f1:'0.379711',bal:'0.628237',brier:'0.139040',n:'1,159,076',thr:'0.218222 (Jan–Jun)'},an:{model:'Airport/Network',ap:'0.342772',roc:'0.679061',prec:'0.274216',rec:'0.606095',f1:'0.377596',bal:'0.626196',brier:'0.208690',n:'1,159,076',thr:'0.463141 (Sep)'},m3:{model:'M3 Stack',ap:'0.357079',roc:'0.691513',prec:'0.264095',rec:'0.691795',f1:'0.382260',bal:'0.633381',brier:'0.136060',n:'1,159,076',thr:'0.175470 (Oct)'}}
+};
+function showModel(model, event){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));document.getElementById(model).classList.add('active');if(event && event.target){event.target.classList.add('active')}}
+function renderResults(){const period=document.getElementById('period').value;const horizon=document.getElementById('horizon').value;const key=horizon==='t2'?'t2':'t30';let data;if(period==='octdec'){data=octdecData[key];let html=`<h3>October–December 2024 Component Comparison (${horizon==='t2'?'T−2h':'T−30m'})</h3><p><em>Exploratory evaluation; already-inspected period.</em></p><table class="model-table"><thead><tr><th>Model</th><th>N</th><th>AP</th><th>ROC-AUC</th><th>Precision</th><th>Recall</th><th>F1</th><th>Balanced Accuracy</th><th>Threshold (Period)</th></tr></thead><tbody>`;for(const model of ['fw','an']){const d=data[model];html+=`<tr><td>${d.model}</td><td>${d.n}</td><td class="ap-value">${d.ap}</td><td>${d.roc}</td><td>${d.prec}</td><td>${d.rec}</td><td>${d.f1}</td><td>${d.bal}</td><td>${d.thr}</td></tr>`;}html+='</tbody></table>';document.getElementById('results').innerHTML=html;}else{data=novdecData[key];let html=`<h3>November–December 2024 M3 Evaluation (${horizon==='t2'?'T−2h':'T−30m'})</h3><p><em>Exploratory evaluation; already-inspected period.</em></p><table class="model-table"><thead><tr><th>Model</th><th>N</th><th>AP</th><th>ROC-AUC</th><th>Precision</th><th>Recall</th><th>F1</th><th>Balanced Accuracy</th><th>Brier</th><th>Threshold (Period)</th></tr></thead><tbody>`;for(const model of ['fw','an','m3']){const d=data[model];html+=`<tr><td>${d.model}</td><td>${d.n}</td><td class="ap-value">${d.ap}</td><td>${d.roc}</td><td>${d.prec}</td><td>${d.rec}</td><td>${d.f1}</td><td>${d.bal}</td><td>${d.brier}</td><td>${d.thr}</td></tr>`;}html+='</tbody></table>';document.getElementById('results').innerHTML=html;}}
+renderResults();
+</script></body></html>
